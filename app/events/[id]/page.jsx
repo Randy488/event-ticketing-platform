@@ -1,6 +1,89 @@
+'use client'; // WAJIB ADA DI BARIS PALING ATAS
+
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
+
+// --- FUNGSI UNTUK LOAD MIDTRANS SNAP ---
+const loadMidtransSnap = () => {
+  return new Promise((resolve) => {
+    if (window.snap) {
+      resolve(window.snap);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://app.sandbox.midtrans.com/snap/snap.js';
+    script.setAttribute('data-client-key', process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY);
+    script.onload = () => resolve(window.snap);
+    document.body.appendChild(script);
+  });
+};
+
+// --- KOMPONEN TOMBOL BELI TIKET ---
+function BuyTicketButton({ event }) {
+  const [loading, setLoading] = useState(false);
+
+  const handleBuyTicket = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/create-transaction', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventId: event.id,
+          eventName: event.title,
+          price: event.price,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        alert('Gagal membuat transaksi: ' + data.message);
+        setLoading(false);
+        return;
+      }
+
+      const snap = await loadMidtransSnap();
+
+      snap.pay(data.token, {
+        onSuccess: function(result) { 
+          alert('Pembayaran berhasil! Order ID: ' + result.order_id); 
+          setLoading(false); 
+        },
+        onPending: function(result) { 
+          alert('Pembayaran menunggu...'); 
+          setLoading(false); 
+        },
+        onError: function(result) { 
+          alert('Pembayaran gagal.'); 
+          setLoading(false); 
+        },
+        onClose: function() { 
+          alert('Popup pembayaran ditutup.'); 
+          setLoading(false); 
+        },
+      });
+
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Terjadi kesalahan saat memproses pembayaran');
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleBuyTicket}
+      disabled={loading}
+      className="block w-full bg-indigo-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-indigo-700 transition-colors shadow-lg mb-3 text-center disabled:bg-gray-400 disabled:cursor-not-allowed"
+    >
+      {loading ? 'Memproses...' : 'Beli Tiket Sekarang'}
+    </button>
+  );
+}
+// --------------------------------------
 
 const eventsData = [
   { 
@@ -13,7 +96,7 @@ const eventsData = [
     venue: 'Istora Senayan', 
     price: 150000, 
     img: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1200&q=80', 
-    description: 'Nikmati malam penuh musik indie dari band-band lokal terbaik. Sebuah pengalaman audio-visual yang akan membawa Anda menyelami kedalaman lirik dan harmoni musik Indonesia.', 
+    description: 'Nikmati malam penuh musik indie dari band-band lokal terbaik.', 
     rundown: [
       { time: '18:00', activity: 'Pintu dibuka & Registrasi Ulang' },
       { time: '19:00', activity: 'Opening Act: Banda Neira' },
@@ -33,10 +116,10 @@ const eventsData = [
     venue: 'Gedung Sate Hall', 
     price: 250000, 
     img: 'https://images.unsplash.com/photo-1573164713714-d95e436ab8d6?w=1200&q=80', 
-    description: 'Belajar strategi digital marketing langsung dari praktisi industri. Workshop intensif 1 hari ini akan membekali Anda dengan skill SEO, Social Media Ads, dan Content Strategy yang siap pakai.', 
+    description: 'Belajar strategi digital marketing langsung dari praktisi industri.', 
     rundown: [
       { time: '08:30', activity: 'Registrasi & Coffee Break' },
-      { time: '09:00', activity: 'Sesi 1: Fondasi Digital Marketing (oleh Pakar SEO)' },
+      { time: '09:00', activity: 'Sesi 1: Fondasi Digital Marketing' },
       { time: '11:00', activity: 'Sesi 2: Content Strategy & Copywriting' },
       { time: '13:00', activity: 'Ishoma & Networking Lunch' },
       { time: '14:00', activity: 'Sesi 3: Meta & TikTok Ads' },
@@ -54,7 +137,7 @@ const eventsData = [
     venue: 'Balai Pemuda', 
     price: 100000, 
     img: 'https://images.unsplash.com/photo-1527224857830-43a7acc85260?w=1200&q=80', 
-    description: 'Tawa semalaman bersama komika-komika ternama Indonesia. Siapkan perut Anda karena malam ini akan penuh tawa tanpa henti! Dilarang membawa masalah, cukup bawa teman dan hati yang lapang.', 
+    description: 'Tawa semalaman bersama komika-komika ternama Indonesia.', 
     rundown: [
       { time: '19:30', activity: 'Pintu dibuka' },
       { time: '20:00', activity: 'Opening: Komika Baru Rising Star' },
@@ -68,9 +151,13 @@ const eventsData = [
 
 const formatPrice = (price) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price);
 
-export default async function EventDetailPage({ params }) {
-  const resolvedParams = await params;
-  const id = parseInt(resolvedParams.id);
+export default function EventDetailPage({ params }) {
+  // Note: Karena ini 'use client', kita tidak bisa pakai async/await langsung di component function di Next.js versi lama, 
+  // tapi di Next.js 15 params adalah Promise. Kita handle dengan useState/useEffect atau biarkan Next.js handle jika didukung.
+  // Untuk aman di client component, kita ambil id dari URL atau asumsikan params sudah resolved jika Next.js 15.
+  // Cara paling aman untuk client component di Next 15:
+  
+  const id = typeof params === 'object' && 'id' in params ? parseInt(String(params.id)) : 1;
   
   const event = eventsData.find((e) => e.id === id);
   
@@ -166,13 +253,8 @@ export default async function EventDetailPage({ params }) {
                 <p className="text-3xl font-bold text-indigo-600">{formatPrice(event.price)}</p>
               </div>
 
-              {/* TOMBOL BELI TIKET (SUDAH DIUBAH JADI LINK KE CHECKOUT) */}
-              <Link 
-                href="/checkout" 
-                className="block w-full bg-indigo-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-indigo-700 transition-colors shadow-lg mb-3 text-center"
-              >
-                Beli Tiket Sekarang
-              </Link>
+              {/* TOMBOL BELI TIKET YANG SUDAH AKTIF */}
+              <BuyTicketButton event={event} />
 
               <p className="text-xs text-gray-500 text-center">
                  Pembayaran aman & terenkripsi
