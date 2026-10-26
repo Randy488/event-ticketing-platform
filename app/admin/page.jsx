@@ -13,13 +13,14 @@ export default function AdminDashboard() {
   
   const [formData, setFormData] = useState({
     title: '',
-    description: '',
+    category: 'Konser',
     date: '',
     time: '',
-    venue: '',
+    location: '', 
+    venue: '', 
     price: '',
-    img: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80&w=1000', // Default image
-    category: 'Musik'
+    description: '',
+    img: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80&w=1000' // Default image URL
   });
 
   // 1. Cek Login & Ambil Data Event saat halaman dimuat
@@ -58,13 +59,14 @@ export default function AdminDashboard() {
     const { error } = await supabase.from('events').insert([
       {
         title: formData.title,
-        description: formData.description,
+        category: formData.category,
         date: formData.date,
         time: formData.time,
+        location: formData.location,
         venue: formData.venue,
         price: parseInt(formData.price),
-        img: formData.img,
-        category: formData.category
+        description: formData.description,
+        img: formData.img, // Langsung simpan URL gambar
       }
     ]);
 
@@ -72,10 +74,10 @@ export default function AdminDashboard() {
       alert('Gagal menambahkan event: ' + error.message);
     } else {
       alert('Event berhasil ditambahkan!');
+      // Reset form ke default
       setFormData({
-        title: '', description: '', date: '', time: '', venue: '', price: '',
-        img: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80&w=1000',
-        category: 'Musik'
+        title: '', category: 'Konser', date: '', time: '', location: '', venue: '', price: '', description: '',
+        img: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80&w=1000'
       });
       setShowForm(false);
       fetchEvents(); // Refresh daftar event
@@ -90,7 +92,7 @@ export default function AdminDashboard() {
     if (error) alert('Gagal menghapus: ' + error.message);
     else {
       alert('Event berhasil dihapus!');
-      fetchEvents(); // Refresh daftar event
+      fetchEvents();
     }
   };
 
@@ -119,18 +121,30 @@ export default function AdminDashboard() {
           </button>
         </div>
 
-        {/* Form Tambah Event (Conditional) */}
+        {/* Form Tambah Event */}
         {showForm && (
           <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 border border-indigo-100">
             <h2 className="text-xl font-bold text-gray-800 mb-4">Form Tambah Event</h2>
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <input name="title" value={formData.title} onChange={handleInputChange} placeholder="Judul Event" required className="px-4 py-2 border rounded-lg" />
-              <input name="category" value={formData.category} onChange={handleInputChange} placeholder="Kategori (misal: Musik, Teknologi)" required className="px-4 py-2 border rounded-lg" />
+              
+              <select name="category" value={formData.category} onChange={handleInputChange} required className="px-4 py-2 border rounded-lg">
+                <option value="Konser">Konser</option>
+                <option value="Workshop">Workshop</option>
+                <option value="Comedy">Comedy</option>
+                <option value="Festival">Festival</option>
+                <option value="Seminar">Seminar</option>
+              </select>
+
               <input name="date" type="date" value={formData.date} onChange={handleInputChange} required className="px-4 py-2 border rounded-lg" />
               <input name="time" type="time" value={formData.time} onChange={handleInputChange} required className="px-4 py-2 border rounded-lg" />
-              <input name="venue" value={formData.venue} onChange={handleInputChange} placeholder="Lokasi / Venue" required className="px-4 py-2 border rounded-lg" />
+              <input name="location" value={formData.location} onChange={handleInputChange} placeholder="Kota (misal: Jakarta)" required className="px-4 py-2 border rounded-lg" />
+              <input name="venue" value={formData.venue} onChange={handleInputChange} placeholder="Nama Gedung / Venue" required className="px-4 py-2 border rounded-lg" />
               <input name="price" type="number" value={formData.price} onChange={handleInputChange} placeholder="Harga Tiket (Rp)" required className="px-4 py-2 border rounded-lg" />
-              <input name="img" value={formData.img} onChange={handleInputChange} placeholder="URL Gambar Poster" className="px-4 py-2 border rounded-lg md:col-span-2" />
+              
+              {/* INPUT URL GAMBAR (Ringan & Cepat) */}
+              <input name="img" value={formData.img} onChange={handleInputChange} placeholder="URL Gambar Poster (Copy link gambar dari internet)" className="px-4 py-2 border rounded-lg md:col-span-2" />
+              
               <textarea name="description" value={formData.description} onChange={handleInputChange} placeholder="Deskripsi Event" required className="px-4 py-2 border rounded-lg md:col-span-2" rows="3" />
               
               <div className="md:col-span-2 flex gap-3">
@@ -162,7 +176,7 @@ export default function AdminDashboard() {
                   <tr>
                     <th className="px-6 py-3">Event</th>
                     <th className="px-6 py-3">Tanggal & Waktu</th>
-                    <th className="px-6 py-3">Venue</th>
+                    <th className="px-6 py-3">Lokasi</th>
                     <th className="px-6 py-3">Harga</th>
                     <th className="px-6 py-3 text-right">Aksi</th>
                   </tr>
@@ -177,7 +191,7 @@ export default function AdminDashboard() {
                       <td className="px-6 py-4 text-sm text-gray-600">
                         {event.date} <br/> {event.time}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{event.venue}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{event.location}<br/><span className="text-xs text-gray-400">{event.venue}</span></td>
                       <td className="px-6 py-4 text-sm font-semibold text-indigo-600">
                         Rp {event.price.toLocaleString('id-ID')}
                       </td>
