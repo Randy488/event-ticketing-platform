@@ -48,23 +48,23 @@ function BuyTicketButton({ event }) {
       const snap = await loadMidtransSnap();
 
       snap.pay(data.token, {
-        onSuccess: function(result) { 
-          alert('Pembayaran berhasil! Order ID: ' + result.order_id); 
-          setLoading(false); 
-        },
-        onPending: function(result) { 
-          alert('Pembayaran menunggu...'); 
-          setLoading(false); 
-        },
-        onError: function(result) { 
-          alert('Pembayaran gagal.'); 
-          setLoading(false); 
-        },
-        onClose: function() { 
-          alert('Popup pembayaran ditutup.'); 
-          setLoading(false); 
-        },
-      });
+  onSuccess: function(result) { 
+    // Redirect ke halaman sukses dengan membawa order_id
+    window.location.href = '/payment-success?orderId=' + result.order_id;
+  },
+  onPending: function(result) { 
+    // Redirect ke halaman pending
+    window.location.href = '/payment-pending?orderId=' + result.order_id;
+  },
+  onError: function(result) { 
+    alert('Pembayaran gagal. Silakan coba lagi.');
+    setLoading(false); 
+  },
+  onClose: function() { 
+    // User menutup popup tanpa bayar - biarkan saja
+    setLoading(false); 
+  },
+});
 
     } catch (error) {
       console.error('Error:', error);
