@@ -1,9 +1,11 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-export default function PaymentPendingPage() {
+// Komponen utama yang menggunakan useSearchParams
+function PaymentPendingContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
 
@@ -57,5 +59,21 @@ export default function PaymentPendingPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Komponen utama dengan Suspense boundary
+export default function PaymentPendingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <PaymentPendingContent />
+    </Suspense>
   );
 }
