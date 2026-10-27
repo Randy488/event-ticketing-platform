@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { notFound, useParams } from 'next/navigation';
-import { supabase } from '../../../lib/supabase'; // <--- RELATIVE PATH YANG BENAR
+import { supabase } from '../../../lib/supabase-client'; // <--- RELATIVE PATH YANG BENAR
 
 // --- FUNGSI UNTUK LOAD MIDTRANS SNAP ---
 const loadMidtransSnap = () => {
