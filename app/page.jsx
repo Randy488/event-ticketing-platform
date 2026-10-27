@@ -3,19 +3,18 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '../lib/supabase'; // <--- RELATIVE PATH YANG BENAR
 
 export default function HomePage() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // 1. Ambil data event dari Supabase saat halaman dimuat
   useEffect(() => {
     async function fetchEvents() {
       const { data, error } = await supabase
         .from('events')
         .select('*')
-        .limit(4); // Ambil maksimal 4 event untuk halaman home
+        .limit(4);
 
       if (data) {
         setEvents(data);
@@ -72,7 +71,6 @@ export default function HomePage() {
           </Link>
         </div>
         
-        {/* TAMPILKAN LOADING ATAU DATA */}
         {loading ? (
           <p className="text-center text-gray-500 text-lg py-10">Memuat event...</p>
         ) : events.length === 0 ? (
@@ -118,20 +116,6 @@ export default function HomePage() {
             ))}
           </div>
         )}
-      </section>
-
-      {/* CALL TO ACTION */}
-      <section className="bg-white py-16 px-4 border-t border-gray-100">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl font-bold text-gray-800 mb-4">Jangan Lewatkan Event Seru!</h2>
-          <p className="text-gray-600 mb-8">Daftar sekarang dan dapatkan notifikasi untuk event favoritmu.</p>
-          <Link 
-            href="/register" 
-            className="inline-block bg-indigo-600 text-white px-10 py-4 rounded-xl font-bold text-lg hover:bg-indigo-700 transition-colors shadow-lg"
-          >
-            Daftar Gratis
-          </Link>
-        </div>
       </section>
     </div>
   );

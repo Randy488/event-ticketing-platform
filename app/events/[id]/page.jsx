@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { notFound, useParams } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '../../../lib/supabase'; // <--- RELATIVE PATH YANG BENAR
 
 // --- FUNGSI UNTUK LOAD MIDTRANS SNAP ---
 const loadMidtransSnap = () => {
@@ -99,7 +99,6 @@ export default function EventDetailPage() {
         .eq('id', id)
         .single();
 
-      // 🕵️ DETEKTIF DIMULAI DI SINI
       if (error || !data) {
         console.log("❌ ERROR ATAU DATA KOSONG:", error);
         setEvent(null);
@@ -107,8 +106,6 @@ export default function EventDetailPage() {
         console.log("✅ DATA EVENT YANG DITEMUKAN DARI DATABASE:", data.title);
         setEvent(data);
       }
-      // 🕵️ DETEKTIF SELESAI DI SINI
-      
       setLoading(false);
     }
 
@@ -147,8 +144,6 @@ export default function EventDetailPage() {
       {/* KONTEN UTAMA */}
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* KOLOM KIRI: Detail Event */}
           <div className="lg:col-span-2 space-y-8">
             <div className="bg-white rounded-2xl shadow-sm p-6 md:p-8">
               <h2 className="text-2xl font-bold text-gray-800 mb-4">Tentang Event</h2>
@@ -156,7 +151,6 @@ export default function EventDetailPage() {
             </div>
           </div>
 
-          {/* KOLOM KANAN: Booking Card Sticky */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-6">
               <div className="space-y-3 mb-6 pb-6 border-b border-gray-100">
