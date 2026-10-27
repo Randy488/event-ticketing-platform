@@ -1,9 +1,10 @@
-'use client'; // WAJIB ADA DI BARIS PALING ATAS
+'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
+import { supabase } from '../../../lib/supabase';
 
 // --- FUNGSI UNTUK LOAD MIDTRANS SNAP ---
 const loadMidtransSnap = () => {
@@ -48,24 +49,20 @@ function BuyTicketButton({ event }) {
       const snap = await loadMidtransSnap();
 
       snap.pay(data.token, {
-  onSuccess: function(result) { 
-    // Redirect ke halaman sukses dengan membawa order_id
-    window.location.href = '/payment-success?orderId=' + result.order_id;
-  },
-  onPending: function(result) { 
-    // Redirect ke halaman pending
-    window.location.href = '/payment-pending?orderId=' + result.order_id;
-  },
-  onError: function(result) { 
-    alert('Pembayaran gagal. Silakan coba lagi.');
-    setLoading(false); 
-  },
-  onClose: function() { 
-    // User menutup popup tanpa bayar - biarkan saja
-    setLoading(false); 
-  },
-});
-
+        onSuccess: function(result) { 
+          window.location.href = '/payment-success?orderId=' + result.order_id;
+        },
+        onPending: function(result) { 
+          window.location.href = '/payment-pending?orderId=' + result.order_id;
+        },
+        onError: function(result) { 
+          alert('Pembayaran gagal. Silakan coba lagi.');
+          setLoading(false); 
+        },
+        onClose: function() { 
+          setLoading(false); 
+        },
+      });
     } catch (error) {
       console.error('Error:', error);
       alert('Terjadi kesalahan saat memproses pembayaran');
@@ -83,93 +80,56 @@ function BuyTicketButton({ event }) {
     </button>
   );
 }
-// --------------------------------------
-
-const eventsData = [
-  { 
-    id: 1, 
-    title: 'Konser Musik Indie', 
-    category: 'Konser', 
-    date: '15 Nov 2026', 
-    time: '19:00 WIB', 
-    location: 'Jakarta', 
-    venue: 'Istora Senayan', 
-    price: 150000, 
-    img: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1200&q=80', 
-    description: 'Nikmati malam penuh musik indie dari band-band lokal terbaik.', 
-    rundown: [
-      { time: '18:00', activity: 'Pintu dibuka & Registrasi Ulang' },
-      { time: '19:00', activity: 'Opening Act: Banda Neira' },
-      { time: '20:00', activity: 'Guest Star: Reality Club' },
-      { time: '21:30', activity: 'Headliner: Hindia' },
-      { time: '23:00', activity: 'Acara Selesai' }
-    ], 
-    facilities: ['Parkir luas', 'Food court', 'Merchandise Booth', 'First Aid'] 
-  },
-  { 
-    id: 2, 
-    title: 'Workshop Digital Marketing', 
-    category: 'Workshop', 
-    date: '20 Nov 2026', 
-    time: '09:00 WIB', 
-    location: 'Bandung', 
-    venue: 'Gedung Sate Hall', 
-    price: 250000, 
-    img: 'https://images.unsplash.com/photo-1573164713714-d95e436ab8d6?w=1200&q=80', 
-    description: 'Belajar strategi digital marketing langsung dari praktisi industri.', 
-    rundown: [
-      { time: '08:30', activity: 'Registrasi & Coffee Break' },
-      { time: '09:00', activity: 'Sesi 1: Fondasi Digital Marketing' },
-      { time: '11:00', activity: 'Sesi 2: Content Strategy & Copywriting' },
-      { time: '13:00', activity: 'Ishoma & Networking Lunch' },
-      { time: '14:00', activity: 'Sesi 3: Meta & TikTok Ads' },
-      { time: '16:00', activity: 'Q&A Session & Sertifikasi' }
-    ], 
-    facilities: ['Sertifikat Resmi', 'Makan Siang', 'Modul Digital', 'WiFi Kencang'] 
-  }, 
-  { 
-    id: 3, 
-    title: 'Stand Up Comedy Night', 
-    category: 'Comedy', 
-    date: '25 Nov 2026', 
-    time: '20:00 WIB', 
-    location: 'Surabaya', 
-    venue: 'Balai Pemuda', 
-    price: 100000, 
-    img: 'https://images.unsplash.com/photo-1527224857830-43a7acc85260?w=1200&q=80', 
-    description: 'Tawa semalaman bersama komika-komika ternama Indonesia.', 
-    rundown: [
-      { time: '19:30', activity: 'Pintu dibuka' },
-      { time: '20:00', activity: 'Opening: Komika Baru Rising Star' },
-      { time: '20:30', activity: 'Set 1: Arief Muhammad' },
-      { time: '21:00', activity: 'Set 2: Ernest Prakasa' },
-      { time: '21:30', activity: 'Headliner: Raditya Dika' }
-    ], 
-    facilities: ['Minuman Gratis', 'Merchandise Eksklusif', 'Sesi Foto Bersama'] 
-  },
-];
 
 const formatPrice = (price) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price);
 
-export default function EventDetailPage({ params }) {
-  // Note: Karena ini 'use client', kita tidak bisa pakai async/await langsung di component function di Next.js versi lama, 
-  // tapi di Next.js 15 params adalah Promise. Kita handle dengan useState/useEffect atau biarkan Next.js handle jika didukung.
-  // Untuk aman di client component, kita ambil id dari URL atau asumsikan params sudah resolved jika Next.js 15.
-  // Cara paling aman untuk client component di Next 15:
-  
-  const id = typeof params === 'object' && 'id' in params ? parseInt(String(params.id)) : 1;
-  
-  const event = eventsData.find((e) => e.id === id);
-  
+export default function EventDetailPage() {
+  const params = useParams();
+  const id = params.id;
+  const [event, setEvent] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchEvent() {
+      if (!id) return;
+      
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      // 🕵️ DETEKTIF DIMULAI DI SINI
+      if (error || !data) {
+        console.log("❌ ERROR ATAU DATA KOSONG:", error);
+        setEvent(null);
+      } else {
+        console.log("✅ DATA EVENT YANG DITEMUKAN DARI DATABASE:", data.title);
+        setEvent(data);
+      }
+      // 🕵️ DETEKTIF SELESAI DI SINI
+      
+      setLoading(false);
+    }
+
+    fetchEvent();
+  }, [id]);
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center text-xl font-bold text-gray-500">Memuat data event...</div>;
+  }
+
   if (!event) {
-    notFound();
+    return notFound();
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* HERO IMAGE */}
       <div className="relative h-64 md:h-96 w-full">
-        <Image src={event.img} alt={event.title} fill sizes="100vw" className="object-cover" priority />
+        {event.img && (
+          <Image src={event.img} alt={event.title} fill sizes="100vw" className="object-cover" priority />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
         <div className="absolute bottom-0 left-0 right-0 p-6 md:p-12 text-white">
           <div className="max-w-6xl mx-auto">
@@ -179,7 +139,7 @@ export default function EventDetailPage({ params }) {
             </Link>
             <span className="inline-block bg-indigo-600 text-white px-3 py-1 rounded-full text-xs font-bold mb-3">{event.category}</span>
             <h1 className="text-3xl md:text-5xl font-bold mb-2">{event.title}</h1>
-            <p className="text-white/90 text-lg">📍 {event.venue}, {event.location}</p>
+            <p className="text-white/90 text-lg">📍 {event.venue}</p>
           </div>
         </div>
       </div>
@@ -193,31 +153,6 @@ export default function EventDetailPage({ params }) {
             <div className="bg-white rounded-2xl shadow-sm p-6 md:p-8">
               <h2 className="text-2xl font-bold text-gray-800 mb-4">Tentang Event</h2>
               <p className="text-gray-600 leading-relaxed">{event.description}</p>
-            </div>
-
-            <div className="bg-white rounded-2xl shadow-sm p-6 md:p-8">
-              <h2 className="text-2xl font-bold text-gray-800 mb-6">Rundown Acara</h2>
-              <div className="space-y-4">
-                {event.rundown.map((item, index) => (
-                  <div key={index} className="flex items-start gap-4">
-                    <div className="flex-shrink-0 w-20 text-indigo-600 font-bold text-lg">{item.time}</div>
-                    <div className="flex-grow pb-4 border-b border-gray-100 last:border-0">
-                      <p className="text-gray-800 font-medium">{item.activity}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl shadow-sm p-6 md:p-8">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">Fasilitas</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {event.facilities.map((facility, index) => (
-                  <div key={index} className="bg-indigo-50 text-indigo-700 px-4 py-3 rounded-lg text-sm font-semibold text-center">
-                    ✓ {facility}
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
 
@@ -239,13 +174,6 @@ export default function EventDetailPage({ params }) {
                     <p className="font-semibold text-gray-800">{event.time}</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-3">
-                  <div className="text-2xl">📍</div>
-                  <div>
-                    <p className="text-sm text-gray-500">Lokasi</p>
-                    <p className="font-semibold text-gray-800">{event.venue}</p>
-                  </div>
-                </div>
               </div>
 
               <div className="mb-6">
@@ -253,10 +181,9 @@ export default function EventDetailPage({ params }) {
                 <p className="text-3xl font-bold text-indigo-600">{formatPrice(event.price)}</p>
               </div>
 
-              {/* TOMBOL BELI TIKET YANG SUDAH AKTIF */}
               <BuyTicketButton event={event} />
 
-              <p className="text-xs text-gray-500 text-center">
+              <p className="text-xs text-gray-500 text-center mt-4">
                  Pembayaran aman & terenkripsi
               </p>
             </div>
