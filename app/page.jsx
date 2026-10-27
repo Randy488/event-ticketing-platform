@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { supabase } from '../lib/supabase'; // <--- RELATIVE PATH YANG BENAR
+import { supabase } from './lib/supabase-client'; // <--- RELATIVE PATH YANG BENAR
 
 export default function HomePage() {
   const [events, setEvents] = useState([]);
