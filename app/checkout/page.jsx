@@ -42,7 +42,7 @@ function CheckoutForm() {
   const handleCheckout = (e) => { e.preventDefault(); setStep('payment'); };
   const handlePaymentDone = () => setStep('success');
 
-  // FUNGSI KIRIM VIA WHATSAPP (UTAMA)
+  // FUNGSI KIRIM VIA WHATSAPP (MENGGUNAKAN window.location.href UNTUK MOBILE)
   const sendTicketViaWhatsApp = () => {
     let phone = formData.phone.replace(/\D/g, '');
     if (phone.startsWith('0')) {
@@ -75,7 +75,9 @@ Terima kasih telah menggunakan TiketEvent! 🎉`;
 
     const encodedMessage = encodeURIComponent(message);
     const whatsappUrl = `https://wa.me/${phone}?text=${encodedMessage}`;
-    window.location.href = whatsappUrl;
+    
+    // Ini yang membuat WA otomatis terbuka di HP
+    window.location.href = whatsappUrl; 
   };
 
   // FUNGSI KIRIM VIA EMAIL (OPSIONAL)
@@ -100,10 +102,10 @@ Pembayaran Anda berhasil! Berikut detail tiket:
  ${event.venue}
 ════════════════════════════════════
 
- Nama: ${formData.name}
+👤 Nama: ${formData.name}
 📱 WhatsApp: ${formData.phone}
 🎟️ Jumlah Tiket: ${quantity}
- Total Bayar: ${formatPrice(grandTotal)}
+💰 Total Bayar: ${formatPrice(grandTotal)}
 
 🔑 KODE BOOKING:
 ${bookingCode}
@@ -130,7 +132,7 @@ Terima kasih telah menggunakan TiketEvent! 🎉
   if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div></div>;
   if (!event) return <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4"><div className="text-center"><h2 className="text-2xl font-bold text-gray-800 mb-4">Event tidak ditemukan</h2><Link href="/events" className="text-indigo-600 hover:underline">Kembali ke Daftar Event</Link></div></div>;
 
-  // HALAMAN SUKSES (FOKUS WHATSAPP)
+  // HALAMAN SUKSES
   if (step === 'success') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-10">
@@ -140,7 +142,7 @@ Terima kasih telah menggunakan TiketEvent! 🎉
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Pembayaran Berhasil! 🎉</h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Pembayaran Berhasil! </h2>
           <p className="text-gray-600 mb-6">
             Tiket untuk <strong>{event.title}</strong> telah dikonfirmasi.
           </p>
@@ -161,7 +163,7 @@ Terima kasih telah menggunakan TiketEvent! 🎉
               Kirim Tiket via WhatsApp
             </button>
 
-            {/* TOMBOL OPSIONAL: EMAIL (Hanya muncul jika ada email) */}
+            {/* TOMBOL OPSIONAL: EMAIL */}
             {formData.email && (
               <button 
                 onClick={sendTicketViaEmail}
