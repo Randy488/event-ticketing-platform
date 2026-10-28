@@ -10,12 +10,12 @@ const formatPrice = (price) => new Intl.NumberFormat('id-ID', { style: 'currency
 
 export default function EventDetailPage() {
   const params = useParams();
-  const router = useRouter(); // Tambahkan router untuk navigasi
+  const router = useRouter();
   const id = params.id;
   
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [quantity, setQuantity] = useState(1); // State untuk jumlah tiket
+  const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
     async function fetchEvent() {
@@ -38,14 +38,9 @@ export default function EventDetailPage() {
     fetchEvent();
   }, [id]);
 
-  // Fungsi saat tombol Beli diklik
   const handleBuyTicket = () => {
     if (!event) return;
-    
     const totalPrice = event.price * quantity;
-    
-    // Arahkan ke halaman checkout dengan membawa data lewat URL (Query Params)
-    // Nanti di halaman checkout, kita ambil data ini untuk proses Midtrans
     router.push(`/checkout?eventId=${id}&quantity=${quantity}&total=${totalPrice}`);
   };
 
@@ -145,7 +140,7 @@ export default function EventDetailPage() {
                 <div className="flex justify-between items-center pt-3 border-t border-indigo-200">
                   <p className="text-base font-bold text-gray-800">Total Pembayaran</p>
                   <p className="text-2xl font-bold text-indigo-600">{formatPrice(totalPrice)}</p>
-                </div
+                </div>
               </div>
 
               {/* TOMBOL BELI YANG AKTIF */}
