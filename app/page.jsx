@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { supabase } from './lib/supabase-client'; // <--- RELATIVE PATH YANG BENAR
+import { supabase } from './lib/supabase-client';
 
 export default function HomePage() {
   const [events, setEvents] = useState([]);
@@ -24,6 +24,12 @@ export default function HomePage() {
 
     fetchEvents();
   }, []);
+
+  // Fallback handler jika gambar dari Supabase gagal dimuat
+  const handleImageError = (e) => {
+    e.target.onerror = null; // Mencegah infinite loop
+    e.target.src = 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80&w=1000';
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -48,13 +54,13 @@ export default function HomePage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link 
               href="/events" 
-              className="bg-white text-indigo-600 px-8 py-4 rounded-xl font-bold text-lg hover:bg-indigo-50 transition-colors shadow-lg"
+              className="bg-white text-indigo-600 px-8 py-4 rounded-xl font-bold text-lg hover:bg-indigo-50 transition-colors shadow-lg text-center"
             >
               Cari Event Sekarang
             </Link>
             <Link 
               href="/login" 
-              className="bg-indigo-700 text-white border border-indigo-500 px-8 py-4 rounded-xl font-bold text-lg hover:bg-indigo-800 transition-colors"
+              className="bg-indigo-700 text-white border border-indigo-500 px-8 py-4 rounded-xl font-bold text-lg hover:bg-indigo-800 transition-colors text-center"
             >
               Masuk Akun
             </Link>
@@ -83,19 +89,19 @@ export default function HomePage() {
                 href={`/events/${event.id}`}
                 className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow group"
               >
-                <div className="relative h-48 w-full">
-                  {event.img && (
-                    <Image 
-                      src={event.img} 
-                      alt={event.title} 
-                      fill 
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  )}
+                {/* GANTI IMAGE NEXT.JS MENJADI IMG BIASA DENGAN FALLBACK */}
+                <div className="relative h-48 w-full bg-gray-200">
+                  <img 
+                    src={event.img || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80&w=1000'} 
+                    alt={event.title}
+                    onError={handleImageError}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
                   <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-indigo-600">
                     {event.category}
                   </div>
                 </div>
+                
                 <div className="p-5">
                   <h3 className="font-bold text-gray-800 text-lg mb-2 line-clamp-1">{event.title}</h3>
                   <div className="flex items-center text-sm text-gray-500 gap-2">
