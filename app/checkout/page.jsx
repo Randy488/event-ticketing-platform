@@ -1,31 +1,51 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, Suspense, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import { supabase } from '../lib/supabase-client';
 
-const mockEvent = {
-  id: 1,
-  title: 'Konser Musik Indie',
-  date: '15 Nov 2026',
-  time: '19:00 WIB',
-  venue: 'Istora Senayan, Jakarta',
-  price: 150000,
-  img: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&q=80',
-};
-
-const formatPrice = (price) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price);
+const formatPrice = (price) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price || 0);
 
 function CheckoutForm() {
   const searchParams = useSearchParams();
-  const [quantity, setQuantity] = useState(1);
+  
+  // Ambil eventId dan quantity dari URL
+  const eventId = searchParams.get('eventId');
+  const urlQuantity = parseInt(searchParams.get('quantity')) || 1;
+  const urlTotal = parseInt(searchParams.get('total')) || 0;
+
+  const [event, setEvent] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [quantity, setQuantity] = useState(urlQuantity);
   const [paymentMethod, setPaymentMethod] = useState('qris');
   const [formData, setFormData] = useState({ name: '', email: '', phone: '' });
-  const [step, setStep] = useState('form'); // 'form', 'payment', 'success'
-  const [timeLeft, setTimeLeft] = useState(600); // 10 menit dalam detik
+  const [step, setStep] = useState('form');
+  const [timeLeft, setTimeLeft] = useState(600);
 
-  const totalPrice = mockEvent.price * quantity;
+  // Fetch event data dari Supabase
+  useEffect(() => {
+    async function fetchEvent() {
+      if (!eventId) return;
+      
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('id', eventId)
+        .single();
+
+      if (data) {
+        setEvent(data);
+      }
+      setLoading(false);
+    }
+
+    fetchEvent();
+  }, [eventId]);
+
+  // Hitung ulang total berdasarkan quantity
+  const totalPrice = event ? event.price * quantity : 0;
   const serviceFee = 5000 * quantity;
   const grandTotal = totalPrice + serviceFee;
 
@@ -48,6 +68,29 @@ function CheckoutForm() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  // Event not found
+  if (!event) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Event tidak ditemukan</h2>
+          <Link href="/events" className="text-indigo-600 hover:underline">
+            Kembali ke Daftar Event
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   // HALAMAN SUKSES
   if (step === 'success') {
     return (
@@ -60,7 +103,7 @@ function CheckoutForm() {
           </div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Pembayaran Berhasil! 🎉</h2>
           <p className="text-gray-600 mb-6">
-            Tiket untuk <strong>{mockEvent.title}</strong> telah dikirim ke email <strong>{formData.email}</strong>.
+            Tiket untuk <strong>{event.title}</strong> telah dikirim ke email <strong>{formData.email}</strong>.
           </p>
           <div className="bg-gray-50 rounded-lg p-4 mb-6 text-sm text-gray-600">
             <p>Kode Booking: <span className="font-mono font-bold text-gray-800">TKT-{Math.random().toString(36).substring(2, 8).toUpperCase()}</span></p>
@@ -191,12 +234,12 @@ function CheckoutForm() {
     );
   }
 
-  // HALAMAN FORM CHECKOUT (ASLI)
+  // HALAMAN FORM CHECKOUT (DINAMIS)
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-5xl mx-auto">
         <div className="mb-8">
-          <Link href="/events/1" className="inline-flex items-center text-gray-600 hover:text-indigo-600 mb-4 transition-colors">
+          <Link href={`/events/${event.id}`} className="inline-flex items-center text-gray-600 hover:text-indigo-600 mb-4 transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
@@ -301,14 +344,19 @@ function CheckoutForm() {
             <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-6">
               <h3 className="text-lg font-bold text-gray-800 mb-4">Ringkasan Pesanan</h3>
               
+              {/* RINGKASAN EVENT DINAMIS */}
               <div className="flex gap-4 mb-6 pb-6 border-b border-gray-100">
-                <div className="relative w-20 h-20 rounded-lg overflow-hidden flex-shrink-0">
-                  <Image src={mockEvent.img} alt={mockEvent.title} fill className="object-cover" />
+                <div className="relative w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gray-200">
+                  {event.img ? (
+                    <Image src={event.img} alt={event.title} fill className="object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-gray-300 flex items-center justify-center text-xs text-gray-500">No Image</div>
+                  )}
                 </div>
                 <div>
-                  <h4 className="font-semibold text-gray-800 text-sm mb-1">{mockEvent.title}</h4>
-                  <p className="text-xs text-gray-500 mb-1">{mockEvent.date} • {mockEvent.time}</p>
-                  <p className="text-xs text-gray-500">{mockEvent.venue}</p>
+                  <h4 className="font-semibold text-gray-800 text-sm mb-1 line-clamp-2">{event.title}</h4>
+                  <p className="text-xs text-gray-500 mb-1">{event.date} • {event.time}</p>
+                  <p className="text-xs text-gray-500 line-clamp-1">{event.venue}</p>
                 </div>
               </div>
 
