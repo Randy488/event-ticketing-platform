@@ -290,7 +290,15 @@ Terima kasih telah menggunakan TiketEvent! 🎉
               <h3 className="text-lg font-bold text-gray-800 mb-4">Ringkasan Pesanan</h3>
               <div className="flex gap-4 mb-6 pb-6 border-b border-gray-100">
                 <div className="relative w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gray-200">
-                  {event.img ? <Image src={event.img} alt={event.title} fill className="object-cover" /> : <div className="w-full h-full bg-gray-300"></div>}
+                  <img 
+  src={event.img || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80&w=200'} 
+  alt={event.title} 
+  className="w-full h-full object-cover"
+  onError={(e) => {
+    e.target.onerror = null;
+    e.target.src = 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80&w=200';
+  }}
+/>
                 </div>
                 <div>
                   <h4 className="font-semibold text-gray-800 text-sm mb-1">{event.title}</h4>
