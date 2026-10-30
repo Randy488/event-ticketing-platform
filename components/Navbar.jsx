@@ -63,10 +63,14 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link href="/" className="text-2xl font-bold text-indigo-600">
-            TiketEvent
-          </Link>
-
+          {/* Logo */}
+<Link href="/">
+  <img 
+    src="/logo-final.jpg" 
+    alt="TiketEvent Logo" 
+    className="h-10 w-auto object-contain" 
+  />
+</Link>
           {/* Menu */}
           <div className="flex items-center gap-6">
             <Link href="/" className="text-gray-700 hover:text-indigo-600 font-medium transition-colors">
