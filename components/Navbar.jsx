@@ -22,7 +22,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         
         {/* BARIS 1: Logo SVG + Tombol Masuk */}
-        <div className="flex justify-between items-center py-2">
+        <div className="flex justify-between items-center py-2 px-2">
           
           {/* LOGO SVG INLINE */}
           <Link href="/">
@@ -61,12 +61,12 @@ export default function Navbar() {
             </svg>
           </Link>
           
-          {/* Tombol Masuk */}
+          {/* Tombol Masuk - COMPACT */}
           {isLoggedIn ? (
             <div className="relative">
               <button 
                 onClick={() => setShowDropdown(!showDropdown)}
-                className="flex items-center gap-2 bg-indigo-600 text-white px-3 py-2 rounded-lg hover:bg-indigo-700 transition text-sm"
+                className="flex items-center gap-2 bg-indigo-600 text-white px-3 py-1.5 rounded-md hover:bg-indigo-700 transition text-xs sm:text-sm"
               >
                 <div className="w-5 h-5 bg-white text-indigo-600 rounded-full flex items-center justify-center font-bold text-xs">
                   {userName.charAt(0).toUpperCase()}
@@ -77,14 +77,14 @@ export default function Navbar() {
           ) : (
             <Link 
               href="/login" 
-              className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700 transition text-sm"
+              className="bg-indigo-600 text-white px-3 py-1.5 rounded-md font-medium hover:bg-indigo-700 transition text-xs sm:text-sm"
             >
               Masuk
             </Link>
           )}
         </div>
 
-        {/* BARIS 2: Menu - TANPA BORDER, SPACING MINIMAL */}
+        {/* BARIS 2: Menu Navigasi */}
         <div className="flex justify-center items-center gap-6 py-1">
           <Link href="/" className="text-gray-700 hover:text-indigo-600 font-medium transition text-sm sm:text-base">
             Home
