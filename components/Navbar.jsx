@@ -66,9 +66,9 @@ export default function Navbar() {
           {/* Logo */}
 <Link href="/">
   <img 
-    src="/logo-final.jpg" 
+    src="/logo.png"
     alt="TiketEvent Logo" 
-    className="h-10 w-auto object-contain" 
+    className="w-48 h-auto object-contain" 
   />
 </Link>
           {/* Menu */}
