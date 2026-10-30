@@ -22,13 +22,13 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         
         {/* BARIS 1: Logo SVG + Tombol Masuk */}
-        <div className="flex justify-between items-center py-2 px-2">
+        <div className="flex justify-between items-center py-2">
           
-          {/* LOGO SVG INLINE */}
+          {/* LOGO SVG INLINE - RESPONSIVE */}
           <Link href="/">
             <svg 
               viewBox="0 0 500 100" 
-              className="h-16 sm:h-20 md:h-24 w-auto"
+              className="h-10 sm:h-14 md:h-20 w-auto"
               xmlns="http://www.w3.org/2000/svg"
             >
               <defs>
