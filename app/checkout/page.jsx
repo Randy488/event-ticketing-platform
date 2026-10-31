@@ -174,10 +174,17 @@ function CheckoutForm() {
               <h3 className="text-lg font-bold text-gray-800 mb-4">Ringkasan Pesanan</h3>
               <div className="flex gap-4 mb-6 pb-6 border-b border-gray-100">
                 <div className="relative w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gray-200">
-                  <img src={event.image_url || event.image} alt={event.title} className="w-full h-full object-cover" />
+                  <img 
+                    src={event.img} 
+                    alt={event.title} 
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.src = 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80&w=200';
+                    }}
+                  />
                 </div>
-                <div>
-                  <h4 className="font-semibold text-gray-800 text-sm mb-1">{event.title}</h4>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-semibold text-gray-800 text-sm mb-1 truncate">{event.title}</h4>
                   <p className="text-xs text-gray-500">{event.date}</p>
                 </div>
               </div>
