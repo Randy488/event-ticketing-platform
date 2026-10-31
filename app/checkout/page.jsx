@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, Suspense, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
-import { supabase } from '../lib/supabase-client';
+import { events } from '../../data/events'; // ← GANTI: Baca dari data lokal
 
 const formatPrice = (price) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price || 0);
 
 function CheckoutForm() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   
   const eventId = searchParams.get('eventId');
@@ -24,14 +24,14 @@ function CheckoutForm() {
   
   const [bookingCode] = useState(() => 'TKT-' + Math.random().toString(36).substring(2, 8).toUpperCase());
 
+  // ← GANTI: Ambil data dari array events lokal, bukan Supabase
   useEffect(() => {
-    async function fetchEvent() {
-      if (!eventId) return;
-      const { data, error } = await supabase.from('events').select('*').eq('id', eventId).single();
-      if (data) setEvent(data);
-      setLoading(false);
+    if (!eventId) return;
+    const foundEvent = events.find(e => e.id === eventId);
+    if (foundEvent) {
+      setEvent(foundEvent);
     }
-    fetchEvent();
+    setLoading(false);
   }, [eventId]);
 
   const totalPrice = event ? event.price * quantity : 0;
@@ -42,7 +42,7 @@ function CheckoutForm() {
   const handleCheckout = (e) => { e.preventDefault(); setStep('payment'); };
   const handlePaymentDone = () => setStep('success');
 
-  // FUNGSI KIRIM VIA WHATSAPP (MENGGUNAKAN window.location.href UNTUK MOBILE)
+  // FUNGSI KIRIM VIA WHATSAPP
   const sendTicketViaWhatsApp = () => {
     let phone = formData.phone.replace(/\D/g, '');
     if (phone.startsWith('0')) {
@@ -58,7 +58,7 @@ Pembayaran Anda berhasil! Berikut detail tiket:
 ━━━━━━━━━━━━━━━━━━━━
 🎤 *${event.title}*
 📅 ${event.date} • ${event.time}
-📍 ${event.venue}
+📍 ${event.location}
 ━━━━━━━━━━━━━━━━━━━━
 
 👤 *Nama:* ${formData.name}
@@ -75,12 +75,10 @@ Terima kasih telah menggunakan TiketEvent! 🎉`;
 
     const encodedMessage = encodeURIComponent(message);
     const whatsappUrl = `https://wa.me/${phone}?text=${encodedMessage}`;
-    
-    // Ini yang membuat WA otomatis terbuka di HP
     window.location.href = whatsappUrl; 
   };
 
-  // FUNGSI KIRIM VIA EMAIL (OPSIONAL)
+  // FUNGSI KIRIM VIA EMAIL
   const sendTicketViaEmail = () => {
     if (!formData.email) {
       alert('Mohon isi alamat email terlebih dahulu.');
@@ -99,7 +97,7 @@ Pembayaran Anda berhasil! Berikut detail tiket:
 ════════════════════════════════════
 🎤 ${event.title}
 📅 ${event.date} • ${event.time}
- ${event.venue}
+📍 ${event.location}
 ════════════════════════════════════
 
 👤 Nama: ${formData.name}
@@ -130,7 +128,15 @@ Terima kasih telah menggunakan TiketEvent! 🎉
   };
 
   if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div></div>;
-  if (!event) return <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4"><div className="text-center"><h2 className="text-2xl font-bold text-gray-800 mb-4">Event tidak ditemukan</h2><Link href="/events" className="text-indigo-600 hover:underline">Kembali ke Daftar Event</Link></div></div>;
+  
+  if (!event) return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">Event tidak ditemukan</h2>
+        <button onClick={() => router.push('/events')} className="text-indigo-600 hover:underline font-semibold">Kembali ke Daftar Event</button>
+      </div>
+    </div>
+  );
 
   // HALAMAN SUKSES
   if (step === 'success') {
@@ -142,7 +148,7 @@ Terima kasih telah menggunakan TiketEvent! 🎉
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Pembayaran Berhasil! </h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Pembayaran Berhasil! 🎉</h2>
           <p className="text-gray-600 mb-6">
             Tiket untuk <strong>{event.title}</strong> telah dikonfirmasi.
           </p>
@@ -152,7 +158,6 @@ Terima kasih telah menggunakan TiketEvent! 🎉
           </div>
           
           <div className="space-y-3 mb-6">
-            {/* TOMBOL UTAMA: WHATSAPP */}
             <button 
               onClick={sendTicketViaWhatsApp}
               className="w-full bg-green-500 text-white py-4 rounded-xl font-bold text-lg hover:bg-green-600 transition-colors flex items-center justify-center gap-2 shadow-lg"
@@ -163,26 +168,13 @@ Terima kasih telah menggunakan TiketEvent! 🎉
               Kirim Tiket via WhatsApp
             </button>
 
-            {/* TOMBOL OPSIONAL: EMAIL */}
             {formData.email && (
               <button 
                 onClick={sendTicketViaEmail}
                 disabled={sendingEmail}
                 className="w-full bg-white text-blue-600 border-2 border-blue-200 py-3 rounded-xl font-semibold hover:bg-blue-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                {sendingEmail ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                    Mengirim...
-                  </>
-                ) : (
-                  <>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                    Kirim juga ke Email
-                  </>
-                )}
+                {sendingEmail ? 'Mengirim...' : 'Kirim juga ke Email'}
               </button>
             )}
           </div>
@@ -197,7 +189,7 @@ Terima kasih telah menggunakan TiketEvent! 🎉
     );
   }
 
-  // HALAMAN PEMBAYARAN
+  // HALAMAN PEMBAYARAN (MOCK)
   if (step === 'payment') {
     return (
       <div className="min-h-screen bg-gray-50 py-8 px-4">
@@ -214,9 +206,7 @@ Terima kasih telah menggunakan TiketEvent! 🎉
             {paymentMethod === 'qris' && (
               <div className="bg-white border-2 border-gray-200 rounded-xl p-6 inline-block mb-6">
                 <div className="w-64 h-64 bg-gray-100 rounded-lg flex items-center justify-center mx-auto">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-32 w-32 text-gray-400 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                  </svg>
+                  <span className="text-gray-400 text-sm">QRIS Placeholder<br/>(Demo Mode)</span>
                 </div>
               </div>
             )}
@@ -291,14 +281,10 @@ Terima kasih telah menggunakan TiketEvent! 🎉
               <div className="flex gap-4 mb-6 pb-6 border-b border-gray-100">
                 <div className="relative w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gray-200">
                   <img 
-  src={event.img || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80&w=200'} 
-  alt={event.title} 
-  className="w-full h-full object-cover"
-  onError={(e) => {
-    e.target.onerror = null;
-    e.target.src = 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80&w=200';
-  }}
-/>
+                    src={event.image} 
+                    alt={event.title} 
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <div>
                   <h4 className="font-semibold text-gray-800 text-sm mb-1">{event.title}</h4>
@@ -308,16 +294,24 @@ Terima kasih telah menggunakan TiketEvent! 🎉
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Jumlah Tiket</label>
                 <div className="flex items-center gap-3">
-                  <button type="button" onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-10 h-10 rounded-lg border border-gray-200">-</button>
+                  <button type="button" onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-10 h-10 rounded-lg border border-gray-200 hover:bg-gray-50">-</button>
                   <span className="w-12 text-center font-bold text-lg">{quantity}</span>
-                  <button type="button" onClick={() => setQuantity(Math.min(10, quantity + 1))} className="w-10 h-10 rounded-lg border border-gray-200">+</button>
+                  <button type="button" onClick={() => setQuantity(Math.min(event.seats, quantity + 1))} className="w-10 h-10 rounded-lg border border-gray-200 hover:bg-gray-50">+</button>
                 </div>
               </div>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-gray-600">Subtotal</span>
+                <span className="font-medium">{formatPrice(totalPrice)}</span>
+              </div>
               <div className="flex justify-between items-center mb-6">
+                <span className="text-gray-600">Biaya Layanan</span>
+                <span className="font-medium">{formatPrice(serviceFee)}</span>
+              </div>
+              <div className="flex justify-between items-center mb-6 border-t pt-4">
                 <span className="text-lg font-bold">Total</span>
                 <span className="text-2xl font-bold text-indigo-600">{formatPrice(grandTotal)}</span>
               </div>
-              <button type="submit" className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold hover:bg-indigo-700 transition-colors">
+              <button type="submit" className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-lg">
                 Bayar Sekarang
               </button>
             </div>
