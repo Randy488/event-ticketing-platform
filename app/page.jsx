@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { supabase } from '../lib/supabase-client';
+import { supabase } from './lib/supabase-client';
 
 export default async function HomePage() {
   const { data: events, error } = await supabase.from('events').select('*').limit(2);

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase-client';
+import { supabase } from '../lib/supabase-client';
 
 export default async function EventsPage() {
   // Ambil SEMUA event dari Supabase
