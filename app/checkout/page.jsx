@@ -3,7 +3,7 @@
 import { useState, Suspense, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { events } from '../../data/events'; // ← GANTI: Baca dari data lokal
+import { supabase } from '@/lib/supabase-client'; // Pastikan path ini sesuai project kamu (bisa juga '../lib/supabase-client')
 
 const formatPrice = (price) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price || 0);
 
@@ -24,14 +24,15 @@ function CheckoutForm() {
   
   const [bookingCode] = useState(() => 'TKT-' + Math.random().toString(36).substring(2, 8).toUpperCase());
 
-  // ← GANTI: Ambil data dari array events lokal, bukan Supabase
+  // AMBIL DATA DARI SUPABASE (BUKAN LOKAL)
   useEffect(() => {
-    if (!eventId) return;
-    const foundEvent = events.find(e => e.id === eventId);
-    if (foundEvent) {
-      setEvent(foundEvent);
+    async function fetchEvent() {
+      if (!eventId) return;
+      const { data, error } = await supabase.from('events').select('*').eq('id', eventId).single();
+      if (data) setEvent(data);
+      setLoading(false);
     }
-    setLoading(false);
+    fetchEvent();
   }, [eventId]);
 
   const totalPrice = event ? event.price * quantity : 0;
@@ -45,98 +46,30 @@ function CheckoutForm() {
   // FUNGSI KIRIM VIA WHATSAPP
   const sendTicketViaWhatsApp = () => {
     let phone = formData.phone.replace(/\D/g, '');
-    if (phone.startsWith('0')) {
-      phone = '62' + phone.substring(1);
-    }
+    if (phone.startsWith('0')) phone = '62' + phone.substring(1);
 
-    const message = `🎫 *TIKET EVENT - TIKETEVENT*
-
-Halo *${formData.name}*,
-
-Pembayaran Anda berhasil! Berikut detail tiket:
-
-━━━━━━━━━━━━━━━━━━━━
-🎤 *${event.title}*
-📅 ${event.date} • ${event.time}
-📍 ${event.location}
-━━━━━━━━━━━━━━━━━━━━
-
-👤 *Nama:* ${formData.name}
-🎟️ *Jumlah Tiket:* ${quantity}
-💰 *Total Bayar:* ${formatPrice(grandTotal)}
-
-🔑 *KODE BOOKING:*
-*${bookingCode}*
-
-━━━━━━━━━━━━━━━━━━━━
-📱 Tunjukkan kode booking ini kepada petugas di lokasi acara.
-
-Terima kasih telah menggunakan TiketEvent! 🎉`;
+    const message = `🎫 *TIKET EVENT - TIKETEVENT*\n\nHalo *${formData.name}*,\n\nPembayaran Anda berhasil! Berikut detail tiket:\n\n━━━━━━━━━━━━━━━━━━━━\n🎤 *${event.title}*\n📅 ${event.date} • ${event.time || ''}\n📍 ${event.venue || event.location}\n━━━━━━━━━━━━━━━━━━━━\n\n👤 *Nama:* ${formData.name}\n🎟️ *Jumlah Tiket:* ${quantity}\n💰 *Total Bayar:* ${formatPrice(grandTotal)}\n\n🔑 *KODE BOOKING:*\n*${bookingCode}*\n\n━━━━━━━━━━━━━━━━━━━━\n📱 Tunjukkan kode booking ini kepada petugas di lokasi acara.\n\nTerima kasih telah menggunakan TiketEvent! 🎉`;
 
     const encodedMessage = encodeURIComponent(message);
-    const whatsappUrl = `https://wa.me/${phone}?text=${encodedMessage}`;
-    window.location.href = whatsappUrl; 
+    window.location.href = `https://wa.me/${phone}?text=${encodedMessage}`; 
   };
 
   // FUNGSI KIRIM VIA EMAIL
   const sendTicketViaEmail = () => {
-    if (!formData.email) {
-      alert('Mohon isi alamat email terlebih dahulu.');
-      return;
-    }
+    if (!formData.email) { alert('Mohon isi alamat email terlebih dahulu.'); return; }
     setSendingEmail(true);
     
-    const emailContent = `
-TIKET EVENT - TIKETEVENT
-════════════════════════════════════
-
-Halo ${formData.name},
-
-Pembayaran Anda berhasil! Berikut detail tiket:
-
-════════════════════════════════════
-🎤 ${event.title}
-📅 ${event.date} • ${event.time}
-📍 ${event.location}
-════════════════════════════════════
-
-👤 Nama: ${formData.name}
-📱 WhatsApp: ${formData.phone}
-🎟️ Jumlah Tiket: ${quantity}
-💰 Total Bayar: ${formatPrice(grandTotal)}
-
-🔑 KODE BOOKING:
-${bookingCode}
-
-════════════════════════════════════
-📱 Tunjukkan kode booking ini kepada petugas di lokasi acara.
-
-Terima kasih telah menggunakan TiketEvent! 🎉
-════════════════════════════════════
-    `;
+    const emailContent = `TIKET EVENT - TIKETEVENT\n════════════════════════════════════\n\nHalo ${formData.name},\n\nPembayaran Anda berhasil! Berikut detail tiket:\n\n════════════════════════════════════\n🎤 ${event.title}\n📅 ${event.date} • ${event.time || ''}\n📍 ${event.venue || event.location}\n════════════════════════════════════\n\n👤 Nama: ${formData.name}\n📱 WhatsApp: ${formData.phone}\n🎟️ Jumlah Tiket: ${quantity}\n💰 Total Bayar: ${formatPrice(grandTotal)}\n\n🔑 KODE BOOKING:\n${bookingCode}\n\n════════════════════════════════════\n📱 Tunjukkan kode booking ini kepada petugas di lokasi acara.\n\nTerima kasih telah menggunakan TiketEvent! 🎉\n════════════════════════════════════`;
 
     const subject = encodeURIComponent(`Tiket ${event.title} - ${bookingCode}`);
     const body = encodeURIComponent(emailContent);
-    const mailtoLink = `mailto:${formData.email}?subject=${subject}&body=${body}`;
+    window.location.href = `mailto:${formData.email}?subject=${subject}&body=${body}`;
     
-    window.location.href = mailtoLink;
-    
-    setTimeout(() => {
-      setSendingEmail(false);
-      alert(`Tiket telah dikirim ke ${formData.email}`);
-    }, 1000);
+    setTimeout(() => { setSendingEmail(false); alert(`Tiket telah dikirim ke ${formData.email}`); }, 1000);
   };
 
   if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div></div>;
-  
-  if (!event) return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">Event tidak ditemukan</h2>
-        <button onClick={() => router.push('/events')} className="text-indigo-600 hover:underline font-semibold">Kembali ke Daftar Event</button>
-      </div>
-    </div>
-  );
+  if (!event) return <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4"><div className="text-center"><h2 className="text-2xl font-bold text-gray-800 mb-4">Event tidak ditemukan</h2><button onClick={() => router.push('/')} className="text-indigo-600 hover:underline font-semibold">Kembali ke Beranda</button></div></div>;
 
   // HALAMAN SUKSES
   if (step === 'success') {
@@ -144,45 +77,27 @@ Terima kasih telah menggunakan TiketEvent! 🎉
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-10">
         <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
           <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
           </div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Pembayaran Berhasil! 🎉</h2>
-          <p className="text-gray-600 mb-6">
-            Tiket untuk <strong>{event.title}</strong> telah dikonfirmasi.
-          </p>
+          <p className="text-gray-600 mb-6">Tiket untuk <strong>{event.title}</strong> telah dikonfirmasi.</p>
           <div className="bg-indigo-50 border-2 border-indigo-200 rounded-lg p-4 mb-6">
             <p className="text-sm text-indigo-600 mb-1 font-semibold">Kode Booking Anda:</p>
             <p className="font-mono font-bold text-indigo-700 text-2xl">{bookingCode}</p>
           </div>
-          
           <div className="space-y-3 mb-6">
-            <button 
-              onClick={sendTicketViaWhatsApp}
-              className="w-full bg-green-500 text-white py-4 rounded-xl font-bold text-lg hover:bg-green-600 transition-colors flex items-center justify-center gap-2 shadow-lg"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
-              </svg>
+            <button onClick={sendTicketViaWhatsApp} className="w-full bg-green-500 text-white py-4 rounded-xl font-bold text-lg hover:bg-green-600 transition-colors flex items-center justify-center gap-2 shadow-lg">
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
               Kirim Tiket via WhatsApp
             </button>
-
             {formData.email && (
-              <button 
-                onClick={sendTicketViaEmail}
-                disabled={sendingEmail}
-                className="w-full bg-white text-blue-600 border-2 border-blue-200 py-3 rounded-xl font-semibold hover:bg-blue-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-              >
+              <button onClick={sendTicketViaEmail} disabled={sendingEmail} className="w-full bg-white text-blue-600 border-2 border-blue-200 py-3 rounded-xl font-semibold hover:bg-blue-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
                 {sendingEmail ? 'Mengirim...' : 'Kirim juga ke Email'}
               </button>
             )}
           </div>
-
           <div className="border-t border-gray-200 pt-4">
-            <Link href="/" className="block w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 transition-colors text-center">
-              Kembali ke Beranda
-            </Link>
+            <Link href="/" className="block w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 transition-colors text-center">Kembali ke Beranda</Link>
           </div>
         </div>
       </div>
@@ -202,7 +117,6 @@ Terima kasih telah menggunakan TiketEvent! 🎉
                 <span className="text-2xl font-bold text-indigo-600">{formatPrice(grandTotal)}</span>
               </div>
             </div>
-            
             {paymentMethod === 'qris' && (
               <div className="bg-white border-2 border-gray-200 rounded-xl p-6 inline-block mb-6">
                 <div className="w-64 h-64 bg-gray-100 rounded-lg flex items-center justify-center mx-auto">
@@ -210,7 +124,6 @@ Terima kasih telah menggunakan TiketEvent! 🎉
                 </div>
               </div>
             )}
-
             <div className="space-y-3">
               <button onClick={handlePaymentDone} className="w-full bg-green-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-green-700 transition-colors shadow-lg">✓ Saya Sudah Bayar</button>
               <button onClick={() => setStep('form')} className="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-200 transition-colors">Kembali ke Form</button>
@@ -280,11 +193,7 @@ Terima kasih telah menggunakan TiketEvent! 🎉
               <h3 className="text-lg font-bold text-gray-800 mb-4">Ringkasan Pesanan</h3>
               <div className="flex gap-4 mb-6 pb-6 border-b border-gray-100">
                 <div className="relative w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gray-200">
-                  <img 
-                    src={event.image} 
-                    alt={event.title} 
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={event.image_url || event.image} alt={event.title} className="w-full h-full object-cover" />
                 </div>
                 <div>
                   <h4 className="font-semibold text-gray-800 text-sm mb-1">{event.title}</h4>
@@ -296,7 +205,7 @@ Terima kasih telah menggunakan TiketEvent! 🎉
                 <div className="flex items-center gap-3">
                   <button type="button" onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-10 h-10 rounded-lg border border-gray-200 hover:bg-gray-50">-</button>
                   <span className="w-12 text-center font-bold text-lg">{quantity}</span>
-                  <button type="button" onClick={() => setQuantity(Math.min(event.seats, quantity + 1))} className="w-10 h-10 rounded-lg border border-gray-200 hover:bg-gray-50">+</button>
+                  <button type="button" onClick={() => setQuantity(Math.min(10, quantity + 1))} className="w-10 h-10 rounded-lg border border-gray-200 hover:bg-gray-50">+</button>
                 </div>
               </div>
               <div className="flex justify-between items-center mb-2">
@@ -311,9 +220,7 @@ Terima kasih telah menggunakan TiketEvent! 🎉
                 <span className="text-lg font-bold">Total</span>
                 <span className="text-2xl font-bold text-indigo-600">{formatPrice(grandTotal)}</span>
               </div>
-              <button type="submit" className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-lg">
-                Bayar Sekarang
-              </button>
+              <button type="submit" className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-lg">Bayar Sekarang</button>
             </div>
           </div>
         </form>

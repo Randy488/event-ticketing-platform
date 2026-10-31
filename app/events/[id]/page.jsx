@@ -1,31 +1,36 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { events } from '../../../data/events';
+import Link from 'next/link';
+import { supabase } from '@/lib/supabase-client'; // Pastikan path ini sesuai dengan project kamu
 
 export default function EventDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const [event, setEvent] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
-  
-  const event = events.find(e => e.id === params.id);
 
-  if (!event) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Event tidak ditemukan</h1>
-          <button 
-            onClick={() => router.push('/events')}
-            className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700"
-          >
-            Kembali ke Daftar Event
-          </button>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    async function fetchEvent() {
+      if (!params.id) return;
+      
+      // Tarik data dari Supabase berdasarkan ID
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('id', params.id)
+        .single();
+
+      if (data) setEvent(data);
+      setLoading(false);
+    }
+    fetchEvent();
+  }, [params.id]);
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div></div>;
+  if (!event) return <div className="min-h-screen flex items-center justify-center text-center"><h1 className="text-2xl font-bold">Event tidak ditemukan</h1><Link href="/events" className="text-indigo-600 mt-4 block">Kembali</Link></div>;
 
   const totalPrice = event.price * quantity;
 
@@ -34,15 +39,12 @@ export default function EventDetailPage() {
       {/* Hero Image */}
       <div className="relative h-64 sm:h-80 overflow-hidden">
         <img 
-          src={event.image} 
+          src={event.image_url || event.image} // Sesuaikan dengan nama kolom gambar di Supabase kamu
           alt={event.title}
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
         <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-          <span className="inline-block bg-indigo-600 text-xs font-semibold px-3 py-1 rounded-full mb-2 uppercase">
-            {event.category}
-          </span>
           <h1 className="text-3xl sm:text-4xl font-bold">{event.title}</h1>
         </div>
       </div>
@@ -65,38 +67,14 @@ export default function EventDetailPage() {
                   <span className="text-2xl">📅</span>
                   <div>
                     <p className="font-semibold text-gray-900">Tanggal</p>
-                    <p className="text-gray-600">
-                      {new Date(event.date).toLocaleDateString('id-ID', { 
-                        weekday: 'long', 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
-                      })}
-                    </p>
+                    <p className="text-gray-600">{event.date}</p>
                   </div>
                 </div>
-                
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl">🕐</span>
-                  <div>
-                    <p className="font-semibold text-gray-900">Waktu</p>
-                    <p className="text-gray-600">{event.time} WIB</p>
-                  </div>
-                </div>
-                
                 <div className="flex items-start gap-3">
                   <span className="text-2xl">📍</span>
                   <div>
                     <p className="font-semibold text-gray-900">Lokasi</p>
-                    <p className="text-gray-600">{event.location}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl">🎟️</span>
-                  <div>
-                    <p className="font-semibold text-gray-900">Kursi Tersedia</p>
-                    <p className="text-gray-600">{event.seats} kursi</p>
+                    <p className="text-gray-600">{event.venue || event.location}</p>
                   </div>
                 </div>
               </div>
@@ -109,41 +87,23 @@ export default function EventDetailPage() {
               <div className="mb-4">
                 <p className="text-sm text-gray-600">Harga per tiket</p>
                 <p className="text-3xl font-bold text-indigo-600">
-                  Rp {event.price.toLocaleString('id-ID')}
+                  Rp {event.price?.toLocaleString('id-ID')}
                 </p>
               </div>
 
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Jumlah Tiket
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Jumlah Tiket</label>
                 <div className="flex items-center gap-3">
-                  <button 
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center text-xl hover:bg-gray-300 transition"
-                  >
-                    -
-                  </button>
-                  
-                  <div className="flex-1 text-center">
-                    <p className="text-2xl font-bold text-gray-900">{quantity}</p>
-                  </div>
-                  
-                  <button 
-                    onClick={() => setQuantity(Math.min(event.seats, quantity + 1))}
-                    className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center text-xl hover:bg-gray-300 transition"
-                  >
-                    +
-                  </button>
+                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center text-xl hover:bg-gray-300">-</button>
+                  <div className="flex-1 text-center"><p className="text-2xl font-bold text-gray-900">{quantity}</p></div>
+                  <button onClick={() => setQuantity(quantity + 1)} className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center text-xl hover:bg-gray-300">+</button>
                 </div>
               </div>
 
               <div className="border-t pt-4 mb-6">
                 <div className="flex justify-between items-center">
                   <span className="font-semibold">Total</span>
-                  <span className="text-xl font-bold text-indigo-600">
-                    Rp {totalPrice.toLocaleString('id-ID')}
-                  </span>
+                  <span className="text-xl font-bold text-indigo-600">Rp {totalPrice.toLocaleString('id-ID')}</span>
                 </div>
               </div>
 
@@ -153,10 +113,6 @@ export default function EventDetailPage() {
               >
                 Pesan Tiket Sekarang
               </button>
-
-              <p className="text-xs text-gray-500 text-center mt-3">
-                Tiket akan dikirim via WhatsApp setelah pembayaran
-              </p>
             </div>
           </div>
 
