@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase-client'; // Pastikan path ini sesuai dengan project kamu
+import { supabase } from '../../lib/supabase-client';
 
 export default function EventDetailPage() {
   const router = useRouter();
@@ -15,14 +15,11 @@ export default function EventDetailPage() {
   useEffect(() => {
     async function fetchEvent() {
       if (!params.id) return;
-      
-      // Tarik data dari Supabase berdasarkan ID
       const { data, error } = await supabase
         .from('events')
         .select('*')
         .eq('id', params.id)
         .single();
-
       if (data) setEvent(data);
       setLoading(false);
     }
@@ -30,36 +27,27 @@ export default function EventDetailPage() {
   }, [params.id]);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div></div>;
-  if (!event) return <div className="min-h-screen flex items-center justify-center text-center"><h1 className="text-2xl font-bold">Event tidak ditemukan</h1><Link href="/events" className="text-indigo-600 mt-4 block">Kembali</Link></div>;
+  if (!event) return <div className="min-h-screen flex items-center justify-center text-center"><h1 className="text-2xl font-bold">Event tidak ditemukan</h1><Link href="/" className="text-indigo-600 mt-4 block">Kembali</Link></div>;
 
   const totalPrice = event.price * quantity;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Image */}
       <div className="relative h-64 sm:h-80 overflow-hidden">
-        <img 
-          src={event.image_url || event.image} // Sesuaikan dengan nama kolom gambar di Supabase kamu
-          alt={event.title}
-          className="w-full h-full object-cover"
-        />
+        <img src={event.image_url || event.image} alt={event.title} className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
         <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
           <h1 className="text-3xl sm:text-4xl font-bold">{event.title}</h1>
         </div>
       </div>
 
-      {/* Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Left: Event Info */}
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-xl font-bold mb-4">Tentang Event</h2>
               <p className="text-gray-700 leading-relaxed">{event.description}</p>
             </div>
-
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-xl font-bold mb-4">Informasi Event</h2>
               <div className="space-y-4">
@@ -81,16 +69,12 @@ export default function EventDetailPage() {
             </div>
           </div>
 
-          {/* Right: Booking Card */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow p-6 sticky top-24">
               <div className="mb-4">
                 <p className="text-sm text-gray-600">Harga per tiket</p>
-                <p className="text-3xl font-bold text-indigo-600">
-                  Rp {event.price?.toLocaleString('id-ID')}
-                </p>
+                <p className="text-3xl font-bold text-indigo-600">Rp {event.price?.toLocaleString('id-ID')}</p>
               </div>
-
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Jumlah Tiket</label>
                 <div className="flex items-center gap-3">
@@ -99,23 +83,15 @@ export default function EventDetailPage() {
                   <button onClick={() => setQuantity(quantity + 1)} className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center text-xl hover:bg-gray-300">+</button>
                 </div>
               </div>
-
               <div className="border-t pt-4 mb-6">
                 <div className="flex justify-between items-center">
                   <span className="font-semibold">Total</span>
                   <span className="text-xl font-bold text-indigo-600">Rp {totalPrice.toLocaleString('id-ID')}</span>
                 </div>
               </div>
-
-              <button 
-                onClick={() => router.push(`/checkout?eventId=${event.id}&quantity=${quantity}`)}
-                className="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold hover:bg-indigo-700 transition"
-              >
-                Pesan Tiket Sekarang
-              </button>
+              <button onClick={() => router.push(`/checkout?eventId=${event.id}&quantity=${quantity}`)} className="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold hover:bg-indigo-700 transition">Pesan Tiket Sekarang</button>
             </div>
           </div>
-
         </div>
       </div>
     </div>

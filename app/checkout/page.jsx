@@ -3,14 +3,13 @@
 import { useState, Suspense, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase-client'; // Pastikan path ini sesuai project kamu (bisa juga '../lib/supabase-client')
+import { supabase } from '../../lib/supabase-client';
 
 const formatPrice = (price) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price || 0);
 
 function CheckoutForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  
   const eventId = searchParams.get('eventId');
   const urlQuantity = parseInt(searchParams.get('quantity')) || 1;
 
@@ -21,10 +20,8 @@ function CheckoutForm() {
   const [formData, setFormData] = useState({ name: '', email: '', phone: '' });
   const [step, setStep] = useState('form');
   const [sendingEmail, setSendingEmail] = useState(false);
-  
   const [bookingCode] = useState(() => 'TKT-' + Math.random().toString(36).substring(2, 8).toUpperCase());
 
-  // AMBIL DATA DARI SUPABASE (BUKAN LOKAL)
   useEffect(() => {
     async function fetchEvent() {
       if (!eventId) return;
@@ -43,35 +40,27 @@ function CheckoutForm() {
   const handleCheckout = (e) => { e.preventDefault(); setStep('payment'); };
   const handlePaymentDone = () => setStep('success');
 
-  // FUNGSI KIRIM VIA WHATSAPP
   const sendTicketViaWhatsApp = () => {
     let phone = formData.phone.replace(/\D/g, '');
     if (phone.startsWith('0')) phone = '62' + phone.substring(1);
-
     const message = `🎫 *TIKET EVENT - TIKETEVENT*\n\nHalo *${formData.name}*,\n\nPembayaran Anda berhasil! Berikut detail tiket:\n\n━━━━━━━━━━━━━━━━━━━━\n🎤 *${event.title}*\n📅 ${event.date} • ${event.time || ''}\n📍 ${event.venue || event.location}\n━━━━━━━━━━━━━━━━━━━━\n\n👤 *Nama:* ${formData.name}\n🎟️ *Jumlah Tiket:* ${quantity}\n💰 *Total Bayar:* ${formatPrice(grandTotal)}\n\n🔑 *KODE BOOKING:*\n*${bookingCode}*\n\n━━━━━━━━━━━━━━━━━━━━\n📱 Tunjukkan kode booking ini kepada petugas di lokasi acara.\n\nTerima kasih telah menggunakan TiketEvent! 🎉`;
-
     const encodedMessage = encodeURIComponent(message);
-    window.location.href = `https://wa.me/${phone}?text=${encodedMessage}`; 
+    window.location.href = `https://wa.me/${phone}?text=${encodedMessage}`;
   };
 
-  // FUNGSI KIRIM VIA EMAIL
   const sendTicketViaEmail = () => {
     if (!formData.email) { alert('Mohon isi alamat email terlebih dahulu.'); return; }
     setSendingEmail(true);
-    
     const emailContent = `TIKET EVENT - TIKETEVENT\n════════════════════════════════════\n\nHalo ${formData.name},\n\nPembayaran Anda berhasil! Berikut detail tiket:\n\n════════════════════════════════════\n🎤 ${event.title}\n📅 ${event.date} • ${event.time || ''}\n📍 ${event.venue || event.location}\n════════════════════════════════════\n\n👤 Nama: ${formData.name}\n📱 WhatsApp: ${formData.phone}\n🎟️ Jumlah Tiket: ${quantity}\n💰 Total Bayar: ${formatPrice(grandTotal)}\n\n🔑 KODE BOOKING:\n${bookingCode}\n\n════════════════════════════════════\n📱 Tunjukkan kode booking ini kepada petugas di lokasi acara.\n\nTerima kasih telah menggunakan TiketEvent! 🎉\n════════════════════════════════════`;
-
     const subject = encodeURIComponent(`Tiket ${event.title} - ${bookingCode}`);
     const body = encodeURIComponent(emailContent);
     window.location.href = `mailto:${formData.email}?subject=${subject}&body=${body}`;
-    
     setTimeout(() => { setSendingEmail(false); alert(`Tiket telah dikirim ke ${formData.email}`); }, 1000);
   };
 
   if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div></div>;
   if (!event) return <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4"><div className="text-center"><h2 className="text-2xl font-bold text-gray-800 mb-4">Event tidak ditemukan</h2><button onClick={() => router.push('/')} className="text-indigo-600 hover:underline font-semibold">Kembali ke Beranda</button></div></div>;
 
-  // HALAMAN SUKSES
   if (step === 'success') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-10">
@@ -86,10 +75,7 @@ function CheckoutForm() {
             <p className="font-mono font-bold text-indigo-700 text-2xl">{bookingCode}</p>
           </div>
           <div className="space-y-3 mb-6">
-            <button onClick={sendTicketViaWhatsApp} className="w-full bg-green-500 text-white py-4 rounded-xl font-bold text-lg hover:bg-green-600 transition-colors flex items-center justify-center gap-2 shadow-lg">
-              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
-              Kirim Tiket via WhatsApp
-            </button>
+            <button onClick={sendTicketViaWhatsApp} className="w-full bg-green-500 text-white py-4 rounded-xl font-bold text-lg hover:bg-green-600 transition-colors flex items-center justify-center gap-2 shadow-lg">Kirim Tiket via WhatsApp</button>
             {formData.email && (
               <button onClick={sendTicketViaEmail} disabled={sendingEmail} className="w-full bg-white text-blue-600 border-2 border-blue-200 py-3 rounded-xl font-semibold hover:bg-blue-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
                 {sendingEmail ? 'Mengirim...' : 'Kirim juga ke Email'}
@@ -104,7 +90,6 @@ function CheckoutForm() {
     );
   }
 
-  // HALAMAN PEMBAYARAN (MOCK)
   if (step === 'payment') {
     return (
       <div className="min-h-screen bg-gray-50 py-8 px-4">
@@ -134,7 +119,6 @@ function CheckoutForm() {
     );
   }
 
-  // HALAMAN FORM CHECKOUT
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-5xl mx-auto">
@@ -145,7 +129,6 @@ function CheckoutForm() {
           </Link>
           <h1 className="text-3xl font-bold text-gray-800">Checkout & Pembayaran</h1>
         </div>
-
         <form onSubmit={handleCheckout} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white rounded-2xl shadow-sm p-6 md:p-8">
@@ -167,7 +150,6 @@ function CheckoutForm() {
                 </div>
               </div>
             </div>
-
             <div className="bg-white rounded-2xl shadow-sm p-6 md:p-8">
               <h2 className="text-xl font-bold text-gray-800 mb-6">Metode Pembayaran</h2>
               <div className="space-y-3">
@@ -187,7 +169,6 @@ function CheckoutForm() {
               </div>
             </div>
           </div>
-
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-6">
               <h3 className="text-lg font-bold text-gray-800 mb-4">Ringkasan Pesanan</h3>
