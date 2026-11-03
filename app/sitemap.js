@@ -1,8 +1,6 @@
-import { MetadataRoute } from 'next';
+export default async function sitemap() {
+  const BASE_URL = 'https://event-ticketing-platform-chi.vercel.app'; 
 
-const BASE_URL = 'https://event-ticketing-platform-chi.vercel.app'; 
-
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     {
       url: BASE_URL,
@@ -11,7 +9,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1,
     },
     {
-      url: `${BASE_URL}/events`, // Sesuaikan jika route event kamu berbeda
+      url: `${BASE_URL}/events`, 
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.8,
