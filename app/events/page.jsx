@@ -1,14 +1,21 @@
 import Link from 'next/link';
-import { supabase } from '../lib/supabase-client';
+import { supabase } from '../lib/supabase-client'; // Path yang benar untuk folder events
 
 export default async function EventsPage() {
-  const { data: events, error } = await supabase.from('events').select('*').order('date', { ascending: true });
+  // 🔒 TAMBAHKAN .eq('status', 'published') DI SINI!
+  const { data: events, error } = await supabase
+    .from('events')
+    .select('*')
+    .eq('status', 'published') // HANYA ambil event yang sudah di-approve Admin
+    .order('date', { ascending: true });
+
   if (error) console.error('Error fetching events:', error);
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-6">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-4xl font-bold text-gray-900 mb-8 text-center">Semua Event</h1>
+        
         {events && events.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {events.map((event) => (
@@ -23,7 +30,7 @@ export default async function EventsPage() {
                   </div>
                   <div className="p-6">
                     <h3 className="text-xl font-bold text-gray-900 mb-2">{event.title}</h3>
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">{event.description}</p>
+                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">{event.description || 'Event seru yang tidak boleh dilewatkan!'}</p>
                     <div className="flex items-center justify-between border-t pt-4">
                       <span className="text-indigo-600 font-bold text-lg">Rp {event.price?.toLocaleString('id-ID')}</span>
                       <span className="text-sm text-gray-500">{event.date}</span>
