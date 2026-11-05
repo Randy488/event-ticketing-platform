@@ -26,14 +26,14 @@ export default function HelpPage() {
                 <span className="text-2xl">📧</span>
                 <div>
                   <p className="text-gray-400 text-sm">Email</p>
-                  <p className="text-white">support@tiketevent.my.id</p>
+                  <p className="text-white">leoragraphics@gmail.com</p>
                 </div>
               </div>
               <div className="flex items-center space-x-3">
                 <span className="text-2xl">📱</span>
                 <div>
                   <p className="text-gray-400 text-sm">WhatsApp</p>
-                  <p className="text-white">08xx-xxxx-xxxx</p>
+                  <p className="text-white">0812-8798-7501</p>
                 </div>
               </div>
               <div className="flex items-center space-x-3">
